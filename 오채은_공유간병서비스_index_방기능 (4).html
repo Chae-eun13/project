@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💊 공유 간병 서비스 - 오채은</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Malgun Gothic', sans-serif; background: #f4f8f7; color: #2d3b38; }
+  header { background: #26a69a; color: #fff; padding: 30px 20px; text-align: center; }
+  header h1 { font-size: 1.6rem; }
+  header p { margin-top: 6px; opacity: 0.92; font-size: 0.95rem; }
+  .container { max-width: 800px; margin: 30px auto; padding: 0 16px; }
+  .box { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+  .box h2 { font-size: 1.1rem; margin-bottom: 16px; color: #00897b; }
+  /* 환자 프로필 */
+  .profile { display: flex; align-items: center; gap: 16px; }
+  .profile .avatar { font-size: 3rem; }
+  .profile .info h3 { font-size: 1.15rem; margin-bottom: 4px; }
+  .profile .info p { font-size: 0.88rem; color: #667; line-height: 1.5; }
+  .profile-edit label { display: block; font-size: 0.8rem; color: #667; margin: 10px 0 4px; }
+  .profile-edit label:first-child { margin-top: 0; }
+  .avatar-picker { display: flex; flex-wrap: wrap; gap: 6px; }
+  .avatar-option { font-size: 1.4rem; padding: 6px 12px; border: 2px solid #e0efec; border-radius: 10px; background: #fff; cursor: pointer; }
+  .avatar-option:hover { border-color: #a8d8d1; }
+  .avatar-option.selected { border-color: #26a69a; background: #e0f2f1; }
+  .profile-edit-buttons { display: flex; gap: 8px; margin-top: 14px; }
+  .profile-edit-buttons .log-btn { margin-top: 0; }
+  .btn-cancel { background: #90a4a4 !important; }
+  .btn-cancel:hover { background: #78909c !important; }
+  /* 약 체크리스트 */
+  .med-item { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid #e0efec; border-radius: 10px; margin-bottom: 10px; cursor: pointer; }
+  .med-item.done { background: #e0f2f1; }
+  .med-item .check { width: 26px; height: 26px; border: 2px solid #26a69a; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; color: #fff; flex-shrink: 0; }
+  .med-item.done .check { background: #26a69a; }
+  .med-item .med-info { flex: 1; }
+  .med-item .med-info strong { display: block; font-size: 0.98rem; }
+  .med-item .med-info span { font-size: 0.82rem; color: #778; }
+  .med-item .who { font-size: 0.78rem; color: #26a69a; }
+  .med-item .del-med { border: none; background: none; color: #ccc; cursor: pointer; font-size: 1.05rem; flex-shrink: 0; padding: 4px; }
+  .med-item .del-med:hover { color: #ef5350; }
+  .del-med.confirm, .del-indicator.confirm, .event-item .del.confirm { color: #ef5350 !important; }
+  /* 삭제 확인 말풍선 (버튼 위에 조그맣게 뜨는 팝업) */
+  .del-wrap { position: relative; display: inline-flex; align-items: center; flex-shrink: 0; }
+  .del-confirm-tooltip {
+    position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+    background: #fff; color: #00897b; font-size: 0.75rem; font-weight: bold;
+    padding: 6px 10px; border: 2px solid #26a69a; border-radius: 7px; white-space: nowrap; z-index: 5;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+  }
+  .del-confirm-tooltip::before {
+    content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+    border: 7px solid transparent; border-top-color: #26a69a;
+  }
+  .del-confirm-tooltip::after {
+    content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%) translateY(-2px);
+    border: 5px solid transparent; border-top-color: #fff;
+  }
+  /* 약 복용 알리미(이메일) 설정 */
+  .reminder-toggle-btn { float: right; font-size: 0.72rem; padding: 5px 10px; background: #fff; border: 1.5px solid #26a69a; color: #00897b; border-radius: 20px; cursor: pointer; font-weight: bold; }
+  .reminder-toggle-btn:hover { background: #e0f2f1; }
+  .reminder-panel { clear: both; margin-top: 14px; padding-top: 14px; border-top: 1px dashed #dcebe8; }
+  .reminder-panel label { display: block; font-size: 0.8rem; color: #667; margin: 10px 0 4px; }
+  .reminder-panel label:first-child { margin-top: 0; }
+  .reminder-panel input[type="time"] { padding: 9px 10px; border: 1px solid #cde5e1; border-radius: 8px; font-size: 0.9rem; }
+  .reminder-panel-buttons { display: flex; gap: 8px; margin-top: 14px; }
+  .reminder-panel-buttons .log-btn { margin-top: 0; }
+  .reminder-status { font-size: 0.78rem; color: #00897b; margin-top: 10px; line-height: 1.5; }
+  .add-med { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; padding-top: 14px; border-top: 1px dashed #dcebe8; }
+  .add-med input { flex: 1; min-width: 110px; padding: 10px; border: 1px solid #cde5e1; border-radius: 8px; font-size: 0.9rem; }
+  .add-med button { padding: 10px 16px; background: #26a69a; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+  .add-med button:hover { background: #00897b; }
+  /* 건강 지표 */
+  .health-form { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px; }
+  .health-field label { display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; color: #667; margin-bottom: 4px; }
+  .health-field input { width: 100%; padding: 9px 10px; border: 1px solid #cde5e1; border-radius: 8px; font-size: 0.9rem; }
+  .health-item { padding: 10px 12px; border: 1px solid #e0efec; border-radius: 10px; margin-bottom: 8px; font-size: 0.88rem; }
+  .health-item .health-vals { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-bottom: 4px; }
+  .health-item .health-vals span { color: #00695c; font-weight: bold; }
+  .health-item .log-meta { font-size: 0.78rem; color: #999; }
+  .del-indicator { border: none; background: none; color: #ccc; cursor: pointer; font-size: 0.95rem; padding: 0 2px; }
+  .del-indicator:hover { color: #ef5350; }
+  .add-indicator { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; padding-top: 14px; border-top: 1px dashed #dcebe8; }
+  .add-indicator input { flex: 1; min-width: 110px; padding: 10px; border: 1px solid #cde5e1; border-radius: 8px; font-size: 0.9rem; }
+  .add-indicator button { padding: 10px 16px; background: #26a69a; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+  .add-indicator button:hover { background: #00897b; }
+  /* 상태 기록 형식화 항목 */
+  .status-form { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px; }
+  .status-field label { display: block; font-size: 0.8rem; color: #667; margin-bottom: 4px; }
+  .status-field select { width: 100%; padding: 9px 10px; border: 1px solid #cde5e1; border-radius: 8px; font-size: 0.9rem; background: #fff; }
+  .status-etc label { display: block; font-size: 0.8rem; color: #667; margin: 4px 0; }
+  /* 상태 기록 항목 고르기 (넷플릭스 스타일 선택 카드) */
+  .category-hint { font-size: 0.85rem; color: #667; margin-bottom: 14px; line-height: 1.5; }
+  .category-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .category-card { border: 2px solid #e0efec; border-radius: 12px; padding: 16px 8px; text-align: center; cursor: pointer; transition: 0.15s; user-select: none; }
+  .category-card:hover { border-color: #a8d8d1; }
+  .category-card.selected { border-color: #26a69a; background: #e0f2f1; }
+  .category-card .cat-icon { font-size: 1.6rem; margin-bottom: 6px; }
+  .category-card .cat-label { font-size: 0.85rem; font-weight: bold; color: #2d3b38; }
+  .category-count { font-size: 0.85rem; color: #00897b; font-weight: bold; margin-bottom: 12px; text-align: center; }
+  button.log-btn:disabled { background: #b7d9d4; cursor: not-allowed; }
+  .reconfig-link { display: block; text-align: center; font-size: 0.8rem; color: #00897b; cursor: pointer; margin-top: 12px; text-decoration: underline; }
+  /* ===== 캘린더 ===== */
+  .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .cal-header .month-title { font-size: 1.15rem; font-weight: bold; color: #00695c; }
+  .cal-header button { padding: 8px 14px; border: 1px solid #cde5e1; background: #fff; border-radius: 8px; cursor: pointer; font-size: 0.9rem; }
+  .cal-header button:hover { background: #e0f2f1; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-dayname { text-align: center; font-size: 0.78rem; color: #889; padding: 6px 0; font-weight: bold; }
+  .cal-dayname.sun { color: #e57373; }
+  .cal-dayname.sat { color: #64b5f6; }
+  .cal-cell {
+    min-height: 58px; border: 1px solid #eef5f3; border-radius: 8px;
+    padding: 5px 6px; font-size: 0.82rem; cursor: pointer; position: relative;
+  }
+  .cal-cell:hover { background: #f0faf8; }
+  .cal-cell.empty { border: none; cursor: default; }
+  .cal-cell.empty:hover { background: none; }
+  .cal-cell.today { border: 2px solid #26a69a; font-weight: bold; }
+  .cal-cell.selected { background: #e0f2f1; border-color: #26a69a; }
+  .cal-cell .daynum.sun { color: #e57373; }
+  .cal-cell .daynum.sat { color: #64b5f6; }
+  .cal-cell .dots { position: absolute; bottom: 5px; left: 6px; right: 6px; display: flex; gap: 3px; flex-wrap: wrap; }
+  .cal-cell .dot { width: 7px; height: 7px; border-radius: 50%; background: #26a69a; }
+  /* 선택한 날짜의 일정 */
+  .day-panel { margin-top: 16px; border-top: 2px dashed #dcebe8; padding-top: 16px; }
+  .day-panel h3 { font-size: 1rem; color: #00695c; margin-bottom: 10px; }
+  .event-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #e0efec; border-radius: 10px; margin-bottom: 8px; font-size: 0.92rem; }
+  .event-item .event-text { flex: 1; line-height: 1.5; }
+  .event-item .event-who { font-size: 0.78rem; color: #26a69a; }
+  .event-item .del { border: none; background: none; color: #ccc; cursor: pointer; font-size: 1rem; }
+  .event-item .del:hover { color: #ef5350; }
+  .add-event { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .add-event input { flex: 1; min-width: 130px; padding: 10px; border: 1px solid #cde5e1; border-radius: 8px; font-size: 0.92rem; }
+  .add-event button { padding: 10px 18px; background: #26a69a; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+  .add-event button:hover { background: #00897b; }
+  /* 다가오는 일정 */
+  .appt { padding: 12px 14px; border: 1px solid #e0efec; border-radius: 10px; margin-bottom: 10px; }
+  .appt strong { display: block; margin-bottom: 4px; }
+  .appt p { font-size: 0.85rem; color: #667; }
+  .dday { float: right; font-weight: bold; color: #e57373; font-size: 0.9rem; }
+  /* 상태 기록 */
+  textarea { width: 100%; padding: 10px; border: 1px solid #cde5e1; border-radius: 8px; font-size: 0.95rem; resize: vertical; min-height: 70px; font-family: inherit; }
+  input.wide { width: 100%; padding: 10px; border: 1px solid #cde5e1; border-radius: 8px; font-size: 0.95rem; margin-bottom: 8px; }
+  button.log-btn { width: 100%; margin-top: 10px; padding: 13px; background: #26a69a; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+  button.log-btn:hover { background: #00897b; }
+  .log-item { padding: 12px 0; border-bottom: 1px dashed #dcebe8; font-size: 0.9rem; line-height: 1.6; }
+  .log-item .log-meta { font-size: 0.78rem; color: #999; }
+  .empty-msg { text-align: center; color: #aaa; padding: 14px 0; font-size: 0.9rem; }
+  .back { display: block; text-align: center; margin: 30px 0; color: #00897b; }
+  /* 방 입장 화면 */
+  .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .login-card { background: #fff; border-radius: 16px; padding: 32px 26px; max-width: 380px; width: 100%; box-shadow: 0 4px 18px rgba(0,0,0,0.09); text-align: center; }
+  .login-logo { font-size: 2.4rem; margin-bottom: 6px; }
+  .login-card h1 { font-size: 1.3rem; color: #00897b; margin-bottom: 8px; }
+  .login-sub { font-size: 0.86rem; color: #667; line-height: 1.5; margin-bottom: 20px; }
+  .login-tabs { display: flex; gap: 6px; margin-bottom: 16px; background: #f0f6f5; padding: 4px; border-radius: 10px; }
+  .tab-btn { flex: 1; padding: 9px; border: none; background: transparent; border-radius: 8px; font-size: 0.88rem; color: #667; cursor: pointer; font-weight: bold; }
+  .tab-btn.active { background: #26a69a; color: #fff; }
+  .login-card input.wide { text-align: left; }
+  .login-msg { min-height: 20px; font-size: 0.85rem; color: #ef5350; margin-top: 8px; }
+  .login-note { font-size: 0.74rem; color: #99a; line-height: 1.5; margin-top: 14px; border-top: 1px dashed #e0efec; padding-top: 12px; }
+  .room-bar { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; font-size: 0.85rem; opacity: 0.95; }
+  .room-bar span#roomLabel { background: rgba(255,255,255,0.18); padding: 4px 10px; border-radius: 20px; }
+  .room-bar button { background: rgba(255,255,255,0.18); color: #fff; border: none; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; }
+  .room-bar button:hover { background: rgba(255,255,255,0.3); }
+</style>
+</head>
+<body>
+
+<!-- 방 입장 화면: 여기를 통과해야 아래 기능들을 쓸 수 있어요 -->
+<div id="loginScreen" class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">💊</div>
+    <h1>공유 간병 서비스</h1>
+    <p class="login-sub">우리 가족(간병인)들만 쓰는 공간이에요.<br>방 이름과 비밀번호로 들어가주세요.</p>
+
+    <div class="login-tabs">
+      <button type="button" class="tab-btn active" id="tabJoinBtn" onclick="switchLoginTab('join')">방 입장하기</button>
+      <button type="button" class="tab-btn" id="tabCreateBtn" onclick="switchLoginTab('create')">방 만들기</button>
+    </div>
+
+    <div id="joinTab">
+      <input class="wide" id="joinRoomName" placeholder="방 이름 (예: 우리할머니네)">
+      <input class="wide" id="joinPassword" type="password" placeholder="비밀번호">
+      <button class="log-btn" onclick="joinRoom()">입장하기</button>
+    </div>
+
+    <div id="createTab" style="display:none;">
+      <input class="wide" id="createRoomName" placeholder="방 이름 (예: 우리할머니네)">
+      <input class="wide" id="createPassword" type="text" placeholder="비밀번호">
+      <input class="wide" id="createPassword2" type="password" placeholder="비밀번호 확인">
+      <button class="log-btn" onclick="createRoom()">방 만들고 입장하기</button>
+    </div>
+
+    <p class="login-msg" id="loginMsg"></p>
+    <p class="login-note">⚠️ 방 이름과 비밀번호는 가족끼리만 공유해주세요. 다만 이 기능은 완벽한 보안 장치는 아니라서(비밀번호를 아는 사람은 누구나 들어올 수 있어요), 실제 민감한 의료정보 대신 참고용 기록으로 사용하는 걸 추천해요.</p>
+  </div>
+</div>
+
+<!-- 로그인 후 실제 서비스 화면 -->
+<div id="appScreen" style="display:none;">
+
+<header>
+  <h1>💊 공유 간병 서비스</h1>
+  <p>가족이 함께하는 간병 기록 — 만든 사람: 오채은</p>
+  <div class="room-bar">
+    <span id="roomLabel"></span>
+    <button onclick="logoutRoom()">🚪 방 나가기</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- 환자 프로필 -->
+  <div class="box">
+    <div id="profileView"></div>
+  </div>
+
+  <!-- 오늘의 약 체크리스트 -->
+  <div class="box">
+    <h2>💊 오늘의 약 복용 체크 <span id="medProgress" style="font-size:0.85rem;color:#999;"></span>
+      <button class="reminder-toggle-btn" onclick="toggleReminderPanel()">🔔 약 복용 알리미 설정</button>
+    </h2>
+    <p style="font-size:0.82rem;color:#889;margin-bottom:12px;">약을 챙겨드린 가족이 이름을 입력하고 체크해주세요.</p>
+    <input class="wide" id="checkerName" placeholder="내 이름 (예: 채은)">
+    <div id="medList"></div>
+
+    <!-- 약 복용 알리미(이메일) 설정 패널 -->
+    <div id="reminderPanel" class="reminder-panel" style="display:none;">
+      <p style="font-size:0.82rem;color:#889;">지정한 시간까지 체크 안 된 약이 있으면 이메일로 알려드려요.</p>
+      <label>알림 받을 이메일</label>
+      <input class="wide" id="reminderEmail" placeholder="family@example.com">
+      <label>몇 시까지 체크 안 되면 알릴까요?</label>
+      <input type="time" id="reminderTime" value="21:00">
+      <div class="reminder-panel-buttons">
+        <button class="log-btn" onclick="saveMedReminder()">저장</button>
+        <button class="btn-cancel log-btn" onclick="turnOffReminder()">알리미 끄기</button>
+      </div>
+      <p id="reminderStatus" class="reminder-status"></p>
+    </div>
+
+    <!-- 약 직접 추가/삭제 -->
+    <div class="add-med">
+      <input id="newMedName" placeholder="약 이름 (예: 종합비타민)">
+      <input id="newMedTime" placeholder="복용 시간 (예: 저녁 식사 후)">
+      <button onclick="addMedication()">약 추가</button>
+    </div>
+    <p style="font-size:0.78rem;color:#aaa;margin-top:6px;">각 약 오른쪽의 ✕ 를 누르면 그 약을 목록에서 삭제할 수 있어요.</p>
+  </div>
+
+  <!-- 환자 건강 지표 기록 -->
+  <div class="box">
+    <h2>📊 건강 지표 기록</h2>
+    <p style="font-size:0.82rem;color:#889;margin-bottom:12px;">측정할 때마다 기록해두면 변화 추이를 가족이 함께 볼 수 있어요. 채우지 않은 항목은 기록에서 빠집니다.</p>
+    <div class="health-form" id="healthForm"></div>
+    <input class="wide" id="hRecorderName" placeholder="측정한 사람 (예: 엄마)">
+    <button class="log-btn" onclick="addHealthRecord()">건강 지표 기록하기</button>
+
+    <!-- 건강 지표 항목 직접 추가/삭제 -->
+    <div class="add-indicator">
+      <input id="newIndicatorName" placeholder="지표 이름 (예: 체온)">
+      <input id="newIndicatorUnit" placeholder="단위 (예: ℃)">
+      <button onclick="addHealthIndicatorType()">지표 추가</button>
+    </div>
+    <p style="font-size:0.78rem;color:#aaa;margin-top:6px;">각 지표 이름 옆의 ✕ 를 누르면 그 지표를 입력 항목에서 삭제할 수 있어요. (이미 기록된 값은 남아있어요)</p>
+  </div>
+  <div class="box">
+    <h2>📈 건강 지표 기록 목록</h2>
+    <div id="healthList"></div>
+  </div>
+
+  <!-- 가족 공유 캘린더 -->
+  <div class="box">
+    <h2>📅 가족 공유 캘린더</h2>
+    <p style="font-size:0.82rem;color:#889;margin-bottom:12px;">병원 예약, 방문 당번, 물리치료 등 간병 일정을 가족이 함께 봐요. 날짜를 클릭하면 일정을 추가할 수 있어요.</p>
+    <div class="cal-header">
+      <button onclick="changeMonth(-1)">◀ 이전달</button>
+      <span class="month-title" id="monthTitle"></span>
+      <button onclick="changeMonth(1)">다음달 ▶</button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+
+    <!-- 선택한 날짜의 일정 -->
+    <div class="day-panel" id="dayPanel" style="display:none;">
+      <h3 id="dayPanelTitle"></h3>
+      <div id="eventList"></div>
+      <div class="add-event">
+        <input id="newEventTitle" placeholder="일정 내용 (예: 내과 검진 10:30)">
+        <input id="newEventWho" placeholder="담당 (예: 엄마)" style="max-width:120px;">
+        <button onclick="addEvent()">추가</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 다가오는 일정 -->
+  <div class="box">
+    <h2>🏥 다가오는 일정</h2>
+    <div id="upcomingList"></div>
+  </div>
+
+  <!-- 간병 일지 남기기 -->
+  <div class="box">
+    <h2>📝 간병 일지 남기기</h2>
+    <div id="statusSection"></div>
+  </div>
+
+  <!-- 기록 목록 -->
+  <div class="box">
+    <h2>📖 가족 간병 일지</h2>
+    <div id="logList"></div>
+  </div>
+
+  <a class="back" href="../index.html">← 전체 프로젝트 목록으로</a>
+</div>
+
+</div> <!-- /appScreen -->
+
+<script>
+// ==========================================================
+// Google Apps Script 연동 설정
+// 설명서.md를 보고 웹 앱 URL을 만든 뒤 아래에 붙여넣으세요.
+// 비워두면 localStorage(내 브라우저)에만 저장됩니다.
+// → 가족이 "함께" 보려면 Sheets 연동이 꼭 필요해요!
+// ==========================================================
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxXnai0kRXohQksgGS6s1O3m8yBxLUtPx_5LZKsCKJ1z41dtseTkZ6tE0mrAjOUVOP4jQ/exec"; // 예: "https://script.google.com/macros/s/AKfyc.../exec"
+
+// ==========================================================
+// 가족(간병인) 방 관리
+// 방 이름 + 비밀번호로 들어가야 아래 기능들을 쓸 수 있어요.
+// 같은 방에 들어온 가족끼리만 기록을 공유합니다.
+// ==========================================================
+let currentRoom = null;
+let currentPwHash = null;
+
+// 기존 코드는 그대로 LS.getItem(...) / LS.setItem(...) 형태로 쓰되,
+// 실제로는 방 이름이 앞에 붙은 key에 저장되게 해주는 작은 래퍼예요.
+// (이렇게 하면 한 브라우저에 여러 방의 기록이 섞이지 않아요)
+const LS = {
+  getItem: function (key) {
+    return window.localStorage.getItem(roomPrefix() + key);
+  },
+  setItem: function (key, value) {
+    return window.localStorage.setItem(roomPrefix() + key, value);
+  },
+  removeItem: function (key) {
+    return window.localStorage.removeItem(roomPrefix() + key);
+  },
+};
+
+function roomPrefix() {
+  return currentRoom ? "room_" + currentRoom + "_" : "";
+}
+
+// 비밀번호 원문을 저장/전송하지 않고 해시로 바꿔요.
+// (완벽한 보안은 아니지만, 최소한 비밀번호 원문이 시트에 그대로 남거나
+//  네트워크로 그대로 오가지 않게 해줘요)
+async function hashPassword(pw) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+}
+
+function switchLoginTab(tab) {
+  document.getElementById("joinTab").style.display = tab === "join" ? "block" : "none";
+  document.getElementById("createTab").style.display = tab === "create" ? "block" : "none";
+  document.getElementById("tabJoinBtn").classList.toggle("active", tab === "join");
+  document.getElementById("tabCreateBtn").classList.toggle("active", tab === "create");
+  document.getElementById("loginMsg").textContent = "";
+}
+
+function showLoginMsg(msg) {
+  document.getElementById("loginMsg").textContent = msg;
+}
+
+// 방 생성 / 입장 확인을 Apps Script에 물어봐요.
+// Apps Script 연동이 안 돼있으면(URL이 비어있으면) 이 브라우저 안에서만 방을 관리해요.
+// (그 경우 다른 기기와는 당연히 공유되지 않아요 — 설명서 참고)
+function callRoomAction(type, room, pwHash) {
+  if (APPS_SCRIPT_URL === "") {
+    const registry = JSON.parse(window.localStorage.getItem("cg_rooms") || "{}");
+    if (type === "방생성") {
+      if (registry[room]) return Promise.resolve({ ok: false, error: "이미 있는 방 이름이에요. 다른 이름을 써주세요." });
+      registry[room] = pwHash;
+      window.localStorage.setItem("cg_rooms", JSON.stringify(registry));
+      return Promise.resolve({ ok: true });
+    } else {
+      if (!registry[room]) return Promise.resolve({ ok: false, error: "그런 방이 없어요. 방 이름을 확인해주세요." });
+      if (registry[room] !== pwHash) return Promise.resolve({ ok: false, error: "비밀번호가 틀렸어요." });
+      return Promise.resolve({ ok: true });
+    }
+  }
+
+  return fetch(APPS_SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify({ type: type, room: room, pwHash: pwHash }),
+  })
+    .then(function (res) { return res.json(); })
+    .catch(function () {
+      return { ok: false, error: "서버에 연결하지 못했어요. 인터넷 연결을 확인해주세요." };
+    });
+}
+
+function createRoom() {
+  const room = document.getElementById("createRoomName").value.trim();
+  const pw = document.getElementById("createPassword").value;
+  const pw2 = document.getElementById("createPassword2").value;
+
+  if (room === "" || pw === "") {
+    showLoginMsg("방 이름과 비밀번호를 모두 입력해주세요.");
+    return;
+  }
+  if (pw !== pw2) {
+    showLoginMsg("비밀번호가 서로 달라요. 다시 확인해주세요.");
+    return;
+  }
+
+  showLoginMsg("방을 만드는 중...");
+  hashPassword(pw).then(function (hash) {
+    callRoomAction("방생성", room, hash).then(function (result) {
+      if (!result.ok) {
+        showLoginMsg(result.error || "방을 만들지 못했어요.");
+        return;
+      }
+      enterRoom(room, hash);
+    });
+  });
+}
+
+function joinRoom() {
+  const room = document.getElementById("joinRoomName").value.trim();
+  const pw = document.getElementById("joinPassword").value;
+
+  if (room === "" || pw === "") {
+    showLoginMsg("방 이름과 비밀번호를 모두 입력해주세요.");
+    return;
+  }
+
+  showLoginMsg("확인하는 중...");
+  hashPassword(pw).then(function (hash) {
+    callRoomAction("방입장확인", room, hash).then(function (result) {
+      if (!result.ok) {
+        showLoginMsg(result.error || "입장하지 못했어요.");
+        return;
+      }
+      enterRoom(room, hash);
+    });
+  });
+}
+
+function enterRoom(room, pwHash) {
+  currentRoom = room;
+  currentPwHash = pwHash;
+
+  // 같은 탭에서 새로고침해도 다시 로그인하지 않도록 세션에 저장해요.
+  // (탭/브라우저를 닫으면 사라지고, 다음엔 다시 비밀번호를 입력해야 해요)
+  window.sessionStorage.setItem("cg_currentRoom", room);
+  window.sessionStorage.setItem("cg_currentPwHash", pwHash);
+  window.localStorage.setItem("cg_lastRoomName", room); // 방 이름만 다음에 편하게 채워줘요
+
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("appScreen").style.display = "block";
+  document.getElementById("roomLabel").textContent = "🏠 " + room;
+
+  startApp();
+}
+
+function logoutRoom() {
+  if (!confirm("이 방에서 나갈까요?")) return;
+  window.sessionStorage.removeItem("cg_currentRoom");
+  window.sessionStorage.removeItem("cg_currentPwHash");
+  location.reload();
+}
+
+// 방 이름 입력칸에 지난번 방 이름을 미리 채워주고,
+// 같은 탭 안에서 이미 로그인했던 상태라면 자동으로 다시 들어가요.
+(function initLoginScreen() {
+  const lastRoomName = window.localStorage.getItem("cg_lastRoomName");
+  if (lastRoomName) {
+    const joinInput = document.getElementById("joinRoomName");
+    if (joinInput) joinInput.value = lastRoomName;
+  }
+  const savedRoom = window.sessionStorage.getItem("cg_currentRoom");
+  const savedHash = window.sessionStorage.getItem("cg_currentPwHash");
+  if (savedRoom && savedHash) {
+    enterRoom(savedRoom, savedHash);
+  }
+})();
+
+// ==========================================================
+// 환자 프로필 (이름/나이/지병/담당병원/가족구성원/아바타를 직접 수정할 수 있어요)
+// ==========================================================
+const defaultProfile = {
+  avatar: "👵",
+  name: "우리 할머니",
+  age: "78",
+  conditions: "고혈압 · 당뇨 관리 중",
+  hospital: "제주대학교병원 내과",
+  family: "엄마 👩 · 아빠 👨 · 나 👧 · 고모 👩‍🦰",
+};
+let patientProfile; // 방에 들어오면 loadRoomData()에서 채워져요
+const avatarOptions = ["👵", "👴", "🧓", "👩", "👨", "🧑", "👧", "👦"];
+let tempAvatar; // 수정 화면에서 고르는 중인 아바타
+
+function renderProfileView() {
+  const el = document.getElementById("profileView");
+  el.innerHTML = `
+    <div class="profile">
+      <div class="avatar">${patientProfile.avatar}</div>
+      <div class="info">
+        <h3>${patientProfile.name} (${patientProfile.age}세)</h3>
+        <p>${patientProfile.conditions} | 담당: ${patientProfile.hospital}<br>
+        가족 구성원: ${patientProfile.family}</p>
+      </div>
+    </div>
+    <span class="reconfig-link" onclick="renderProfileEdit()">✏️ 프로필 수정</span>
+  `;
+}
+
+function renderProfileEdit() {
+  const el = document.getElementById("profileView");
+  tempAvatar = patientProfile.avatar;
+
+  let avatarHtml = "";
+  avatarOptions.forEach(function (a) {
+    avatarHtml += `<button type="button" class="avatar-option ${a === tempAvatar ? "selected" : ""}" data-avatar="${a}" onclick="selectAvatarOption('${a}')">${a}</button>`;
+  });
+
+  el.innerHTML = `
+    <div class="profile-edit">
+      <label>아바타</label>
+      <div class="avatar-picker" id="avatarPicker">${avatarHtml}</div>
+      <label>이름</label>
+      <input class="wide" id="editName" value="${patientProfile.name}" placeholder="예: 우리 할머니">
+      <label>나이</label>
+      <input class="wide" id="editAge" value="${patientProfile.age}" placeholder="예: 78">
+      <label>지병 / 관리 중인 질환</label>
+      <input class="wide" id="editConditions" value="${patientProfile.conditions}" placeholder="예: 고혈압 · 당뇨 관리 중">
+      <label>담당 병원 · 진료과</label>
+      <input class="wide" id="editHospital" value="${patientProfile.hospital}" placeholder="예: 제주대학교병원 내과">
+      <label>가족 구성원</label>
+      <input class="wide" id="editFamily" value="${patientProfile.family}" placeholder="예: 엄마 👩 · 아빠 👨">
+      <div class="profile-edit-buttons">
+        <button class="log-btn" onclick="saveProfileEdit()">저장</button>
+        <button class="log-btn btn-cancel" onclick="renderProfileView()">취소</button>
+      </div>
+    </div>
+  `;
+}
+
+function selectAvatarOption(a) {
+  tempAvatar = a;
+  document.querySelectorAll("#avatarPicker .avatar-option").forEach(function (btn) {
+    btn.classList.toggle("selected", btn.getAttribute("data-avatar") === a);
+  });
+}
+
+function saveProfileEdit() {
+  const name = document.getElementById("editName").value.trim();
+  const age = document.getElementById("editAge").value.trim();
+  const conditions = document.getElementById("editConditions").value.trim();
+  const hospital = document.getElementById("editHospital").value.trim();
+  const family = document.getElementById("editFamily").value.trim();
+
+  if (name === "") {
+    alert("이름을 입력해주세요!");
+    return;
+  }
+
+  patientProfile = { avatar: tempAvatar, name: name, age: age, conditions: conditions, hospital: hospital, family: family };
+  LS.setItem("patientProfile", JSON.stringify(patientProfile));
+  sendToSheets({ type: "프로필", data: patientProfile }); // 방 전체에 프로필을 동기화해요
+  renderProfileView();
+}
+
+// ==========================================================
+// 오늘의 약 목록 (직접 추가/삭제 가능 — localStorage에 저장)
+// ==========================================================
+const defaultMedications = [
+  { id: "morning", name: "혈압약 (아침)", time: "아침 식사 후 30분" },
+  { id: "lunch",   name: "당뇨약 (점심)", time: "점심 식사 직전" },
+  { id: "evening", name: "혈압약 (저녁)", time: "저녁 식사 후 30분" },
+  { id: "night",   name: "영양제", time: "자기 전" },
+];
+let medications; // 방에 들어오면 loadRoomData()에서 채워져요
+
+function saveMedications() {
+  LS.setItem("medications", JSON.stringify(medications));
+  sendToSheets({ type: "약목록", data: medications }); // 방 전체에 약 목록을 동기화해요
+}
+
+// 새 약 추가
+function addMedication() {
+  const name = document.getElementById("newMedName").value.trim();
+  const time = document.getElementById("newMedTime").value.trim();
+
+  if (name === "" || time === "") {
+    alert("약 이름과 복용 시간을 모두 입력해주세요!");
+    return;
+  }
+
+  const newId = "med_" + Date.now();
+  medications.push({ id: newId, name: name, time: time });
+  saveMedications(); // 방 전체에 동기화돼요
+
+  document.getElementById("newMedName").value = "";
+  document.getElementById("newMedTime").value = "";
+  renderMeds();
+}
+
+// 약 삭제 (체크 기록도 함께 정리)
+// 참고: 카카오톡 인앱 브라우저 등 일부 환경에서는 confirm() 팝업이 뜨지 않고
+// 자동으로 취소되어 삭제가 조용히 무시되는 문제가 있어서, 브라우저 확인창 대신
+// "한 번 더 누르면 삭제" 방식(버튼을 두 번 눌러야 실제 삭제)으로 구현했어요.
+let pendingMedDelete = null;
+let pendingMedDeleteTimer = null;
+
+function deleteMedication(medId, event) {
+  event.stopPropagation(); // 삭제 버튼 클릭이 체크 토글로 이어지지 않도록
+
+  if (pendingMedDelete === medId) {
+    // 두 번째 클릭 → 실제 삭제
+    clearTimeout(pendingMedDeleteTimer);
+    pendingMedDelete = null;
+    medications = medications.filter(function (m) { return m.id !== medId; });
+    delete medChecks[medId];
+    saveMedications(); // 방 전체에 동기화돼요
+    LS.setItem("medChecks", JSON.stringify(medChecks));
+    renderMeds();
+  } else {
+    // 첫 번째 클릭 → "삭제?" 상태로 바꾸고 3초 후 자동 취소
+    pendingMedDelete = medId;
+    renderMeds();
+    clearTimeout(pendingMedDeleteTimer);
+    pendingMedDeleteTimer = setTimeout(function () {
+      pendingMedDelete = null;
+      renderMeds();
+    }, 3000);
+  }
+}
+
+// 복용 체크 기록: { "morning": "채은", ... }
+let medChecks; // 방에 들어오면 loadRoomData()에서 채워져요
+// 간병 일지 목록
+let logs; // 방에 들어오면 loadRoomData()에서 채워져요
+
+// ==========================================================
+// 캘린더 일정 데이터
+// { "2026-07-14": [ { title: "내과 검진", who: "엄마" } ], ... }
+// ==========================================================
+let events; // 방에 들어오면 loadRoomData()에서 채워져요
+
+// "2026-07-05" 같은 날짜 문자열을 만드는 함수 (월과 일은 두 자리로)
+function dateKey(year, month, day) {
+  return year + "-" + String(month + 1).padStart(2, "0") + "-" + String(day).padStart(2, "0");
+}
+
+function saveEvents() {
+  LS.setItem("careEvents", JSON.stringify(events));
+}
+
+// ==========================================================
+// 캘린더 그리기
+// ==========================================================
+let viewYear, viewMonth;   // 지금 보고 있는 년/월
+let selectedKey = null;     // 선택한 날짜 (예: "2026-07-14")
+
+const today = new Date();
+viewYear = today.getFullYear();
+viewMonth = today.getMonth();
+
+function renderCalendar() {
+  const grid = document.getElementById("calGrid");
+  grid.innerHTML = "";
+
+  document.getElementById("monthTitle").textContent = viewYear + "년 " + (viewMonth + 1) + "월";
+
+  // 요일 이름 줄
+  const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
+  dayNames.forEach(function (name, i) {
+    const el = document.createElement("div");
+    el.className = "cal-dayname" + (i === 0 ? " sun" : "") + (i === 6 ? " sat" : "");
+    el.textContent = name;
+    grid.appendChild(el);
+  });
+
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay(); // 1일의 요일
+  const lastDate = new Date(viewYear, viewMonth + 1, 0).getDate(); // 이번 달 마지막 날짜
+
+  // 1일 앞의 빈 칸 채우기
+  for (let i = 0; i < firstDay; i++) {
+    const el = document.createElement("div");
+    el.className = "cal-cell empty";
+    grid.appendChild(el);
+  }
+
+  // 날짜 칸 만들기
+  for (let d = 1; d <= lastDate; d++) {
+    const key = dateKey(viewYear, viewMonth, d);
+    const dayOfWeek = (firstDay + d - 1) % 7;
+
+    const cell = document.createElement("div");
+    cell.className = "cal-cell";
+
+    // 오늘 날짜 표시
+    if (viewYear === today.getFullYear() && viewMonth === today.getMonth() && d === today.getDate()) {
+      cell.classList.add("today");
+    }
+    // 선택한 날짜 표시
+    if (key === selectedKey) cell.classList.add("selected");
+
+    // 날짜 숫자 (일요일=빨강, 토요일=파랑)
+    let numClass = "";
+    if (dayOfWeek === 0) numClass = "sun";
+    if (dayOfWeek === 6) numClass = "sat";
+    cell.innerHTML = `<span class="daynum ${numClass}">${d}</span>`;
+
+    // 일정이 있는 날은 점(●) 표시
+    if (events[key] && events[key].length > 0) {
+      let dots = '<div class="dots">';
+      events[key].forEach(function () { dots += '<span class="dot"></span>'; });
+      dots += "</div>";
+      cell.innerHTML += dots;
+    }
+
+    // 클릭하면 그 날짜 선택
+    cell.onclick = function () { selectDate(key, d); };
+    grid.appendChild(cell);
+  }
+}
+
+// 이전달/다음달 버튼
+function changeMonth(step) {
+  viewMonth += step;
+  if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+  if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+  selectedKey = null;
+  document.getElementById("dayPanel").style.display = "none";
+  renderCalendar();
+}
+
+// ==========================================================
+// 날짜를 클릭했을 때: 그 날의 일정 보여주기
+// ==========================================================
+function selectDate(key, day) {
+  selectedKey = key;
+  pendingEventDelete = null;
+  clearTimeout(pendingEventDeleteTimer);
+  renderCalendar();
+
+  document.getElementById("dayPanel").style.display = "block";
+  document.getElementById("dayPanelTitle").textContent =
+    "📌 " + (viewMonth + 1) + "월 " + day + "일 일정";
+  renderEvents();
+}
+
+function renderEvents() {
+  const listEl = document.getElementById("eventList");
+  const dayEvents = events[selectedKey] || [];
+
+  if (dayEvents.length === 0) {
+    listEl.innerHTML = '<p class="empty-msg">이 날은 일정이 없어요. 아래에서 추가해보세요!</p>';
+    return;
+  }
+
+  listEl.innerHTML = "";
+  dayEvents.forEach(function (ev, i) {
+    listEl.innerHTML += `
+      <div class="event-item">
+        <span>🏥</span>
+        <span class="event-text">${ev.title}<br><span class="event-who">담당: ${ev.who}</span></span>
+        <span class="del-wrap">
+          ${pendingEventDelete === i ? '<span class="del-confirm-tooltip">정말 삭제할까요?</span>' : ""}
+          <button class="del" onclick="deleteEvent(${i})" title="일정 삭제">✕</button>
+        </span>
+      </div>`;
+  });
+}
+
+// 일정 추가
+function addEvent() {
+  const title = document.getElementById("newEventTitle").value.trim();
+  const who = document.getElementById("newEventWho").value.trim();
+
+  if (title === "" || who === "") {
+    alert("일정 내용과 담당자를 모두 입력해주세요!");
+    return;
+  }
+
+  if (!events[selectedKey]) events[selectedKey] = [];
+  const newEvent = { id: "evt_" + Date.now(), title: title, who: who };
+  events[selectedKey].push(newEvent);
+  saveEvents();
+  sendToSheets({ type: "일정", data: { date: selectedKey, id: newEvent.id, title: title, who: who } });
+
+  document.getElementById("newEventTitle").value = "";
+  document.getElementById("newEventWho").value = "";
+  renderCalendar();
+  renderEvents();
+  renderUpcoming();
+}
+
+// 일정 삭제
+let pendingEventDelete = null;
+let pendingEventDeleteTimer = null;
+
+function deleteEvent(index) {
+  if (pendingEventDelete === index) {
+    clearTimeout(pendingEventDeleteTimer);
+    pendingEventDelete = null;
+    const deletedEvent = events[selectedKey][index];
+    events[selectedKey].splice(index, 1);
+    if (events[selectedKey].length === 0) delete events[selectedKey];
+    saveEvents();
+    sendToSheets({ type: "일정삭제", data: { date: selectedKey, id: deletedEvent.id } });
+    renderCalendar();
+    renderEvents();
+    renderUpcoming();
+  } else {
+    pendingEventDelete = index;
+    renderEvents();
+    clearTimeout(pendingEventDeleteTimer);
+    pendingEventDeleteTimer = setTimeout(function () {
+      pendingEventDelete = null;
+      renderEvents();
+    }, 3000);
+  }
+}
+
+// ==========================================================
+// 다가오는 일정: 오늘 이후 일정을 날짜순으로 3개까지 보여주기
+// ==========================================================
+function renderUpcoming() {
+  const listEl = document.getElementById("upcomingList");
+  const todayKey = dateKey(today.getFullYear(), today.getMonth(), today.getDate());
+
+  // 오늘 이후의 일정만 모으기
+  const upcoming = [];
+  for (const key in events) {
+    if (key >= todayKey) {
+      events[key].forEach(function (ev) {
+        upcoming.push({ date: key, title: ev.title, who: ev.who });
+      });
+    }
+  }
+  upcoming.sort(function (a, b) { return a.date < b.date ? -1 : 1; }); // 날짜순 정렬
+
+  if (upcoming.length === 0) {
+    listEl.innerHTML = '<p class="empty-msg">다가오는 일정이 없어요. 캘린더에서 추가해보세요!</p>';
+    return;
+  }
+
+  listEl.innerHTML = "";
+  upcoming.slice(0, 3).forEach(function (ev) {
+    // D-day 계산하기
+    const parts = ev.date.split("-");
+    const evDate = new Date(parts[0], parts[1] - 1, parts[2]);
+    const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const diff = Math.round((evDate - todayDate) / (1000 * 60 * 60 * 24));
+    const ddayText = (diff === 0) ? "오늘!" : "D-" + diff;
+
+    listEl.innerHTML += `
+      <div class="appt">
+        <span class="dday">${ddayText}</span>
+        <strong>${ev.title}</strong>
+        <p>${parts[1]}월 ${parts[2]}일 · 담당: ${ev.who}</p>
+      </div>`;
+  });
+}
+
+// ==========================================================
+// 약 체크리스트 그리기
+// ==========================================================
+function renderMeds() {
+  const listEl = document.getElementById("medList");
+  listEl.innerHTML = "";
+  let doneCount = 0;
+
+  if (medications.length === 0) {
+    listEl.innerHTML = '<p class="empty-msg">등록된 약이 없어요. 아래에서 추가해보세요!</p>';
+    document.getElementById("medProgress").textContent = "";
+    return;
+  }
+
+  medications.forEach(function (med) {
+    const checker = medChecks[med.id]; // 체크한 사람 이름 (없으면 undefined)
+    if (checker) doneCount++;
+
+    listEl.innerHTML += `
+      <div class="med-item ${checker ? "done" : ""}" onclick="toggleMed('${med.id}')">
+        <div class="check">${checker ? "✔" : ""}</div>
+        <div class="med-info">
+          <strong>${med.name}</strong>
+          <span>⏰ ${med.time}</span>
+        </div>
+        <div class="who">${checker ? checker + "님이 챙김 💚" : ""}</div>
+        <span class="del-wrap">
+          ${pendingMedDelete === med.id ? '<span class="del-confirm-tooltip">정말 삭제할까요?</span>' : ""}
+          <button class="del-med" title="약 삭제" onclick="deleteMedication('${med.id}', event)">✕</button>
+        </span>
+      </div>`;
+  });
+
+  document.getElementById("medProgress").textContent = `(${doneCount}/${medications.length} 완료)`;
+}
+
+// 약 체크/체크해제 함수
+// 예전에는 "오늘 체크된 전체 상태"를 통째로 서버에 보냈는데,
+// 그러면 두 사람이 거의 동시에 서로 다른 약을 체크했을 때
+// 나중에 도착한 요청이 먼저 한 사람의 체크를 지워버리는 문제가 있었어요.
+// 그래서 이제는 "이 약 하나"의 체크/해제만 서버에 보내요.
+function toggleMed(medId) {
+  let checkerName = null; // null이면 "체크 해제"라는 뜻이에요
+
+  if (medChecks[medId]) {
+    // 이미 체크됨 → 체크 해제 (다시 누르면 언제든 재체크할 수 있어 별도 확인 없이 바로 해제)
+    delete medChecks[medId];
+  } else {
+    const name = document.getElementById("checkerName").value.trim();
+    if (name === "") {
+      alert("먼저 내 이름을 입력해주세요!");
+      return;
+    }
+    medChecks[medId] = name;
+    checkerName = name;
+  }
+  LS.setItem("medChecks", JSON.stringify(medChecks));
+  // 그 방의 오늘 체크 전체가 아니라, 이 약 하나의 체크/해제만 보내요.
+  sendToSheets({ type: "약체크토글", data: { medId: medId, checker: checkerName } });
+  renderMeds();
+}
+
+// ==========================================================
+// 약 복용 알리미 (이메일) 설정
+// 지정한 시간까지 체크 안 된 약이 있으면 이메일로 알려주는 기능이에요.
+// 실제 발송은 Apps Script 쪽 트리거(checkMedReminders)가 담당하고,
+// 여기서는 "누구에게, 몇 시에" 보낼지를 시트에 저장만 해요.
+// ==========================================================
+let medReminder; // 방에 들어오면 loadRoomData()에서 채워져요 { email, time }
+
+function toggleReminderPanel() {
+  const panel = document.getElementById("reminderPanel");
+  const opening = panel.style.display === "none";
+  panel.style.display = opening ? "block" : "none";
+  if (opening) renderReminderPanel();
+}
+
+function renderReminderPanel() {
+  document.getElementById("reminderEmail").value = (medReminder && medReminder.email) || "";
+  document.getElementById("reminderTime").value = (medReminder && medReminder.time) || "21:00";
+  updateReminderStatus();
+}
+
+function updateReminderStatus() {
+  const statusEl = document.getElementById("reminderStatus");
+  if (!statusEl) return;
+  if (medReminder && medReminder.email) {
+    statusEl.textContent = "현재 매일 " + medReminder.time + "까지 체크 안 된 약이 있으면 " + medReminder.email + " 로 알려드려요.";
+  } else {
+    statusEl.textContent = "아직 알리미가 꺼져 있어요.";
+  }
+}
+
+function saveMedReminder() {
+  const email = document.getElementById("reminderEmail").value.trim();
+  const time = document.getElementById("reminderTime").value;
+
+  if (email === "" || !email.includes("@")) {
+    alert("올바른 이메일 주소를 입력해주세요!");
+    return;
+  }
+  if (time === "") {
+    alert("알림 받을 시간을 선택해주세요!");
+    return;
+  }
+
+  medReminder = { email: email, time: time };
+  LS.setItem("medReminder", JSON.stringify(medReminder));
+  sendToSheets({ type: "알림설정", data: medReminder });
+  updateReminderStatus();
+  alert("알리미 설정을 저장했어요!");
+}
+
+function turnOffReminder() {
+  medReminder = { email: "", time: document.getElementById("reminderTime").value || "21:00" };
+  LS.setItem("medReminder", JSON.stringify(medReminder));
+  sendToSheets({ type: "알림설정", data: medReminder });
+  document.getElementById("reminderEmail").value = "";
+  updateReminderStatus();
+}
+
+// ==========================================================
+// 건강 지표 기록 (혈압/혈당/체중 등 — 항목을 직접 추가/삭제할 수 있어요)
+// ==========================================================
+const defaultHealthIndicatorTypes = [
+  { id: "bp",     name: "혈압", unit: "mmHg", compound: true },
+  { id: "sugar",  name: "혈당", unit: "mg/dL", compound: false },
+  { id: "weight", name: "체중", unit: "kg",    compound: false },
+];
+let healthIndicatorTypes; // 방에 들어오면 loadRoomData()에서 채워져요
+let healthRecords; // 방에 들어오면 loadRoomData()에서 채워져요
+
+function saveHealthIndicatorTypes() {
+  LS.setItem("healthIndicatorTypes", JSON.stringify(healthIndicatorTypes));
+}
+
+// 건강 지표 입력칸을 현재 지표 목록에 맞게 다시 그리기
+function renderHealthForm() {
+  const formEl = document.getElementById("healthForm");
+
+  if (healthIndicatorTypes.length === 0) {
+    formEl.innerHTML = '<p class="empty-msg">등록된 건강 지표가 없어요. 아래에서 추가해보세요!</p>';
+    return;
+  }
+
+  let html = "";
+  healthIndicatorTypes.forEach(function (type) {
+    if (type.compound) {
+      html += `
+        <div class="health-field">
+          <label>수축기 ${type.name} (${type.unit})<span class="del-wrap">${pendingIndicatorDelete === type.id ? '<span class="del-confirm-tooltip">정말 삭제할까요?</span>' : ""}<button class="del-indicator" title="지표 삭제" onclick="deleteHealthIndicator('${type.id}')">✕</button></span></label>
+          <input type="number" id="h_${type.id}_high" placeholder="예: 128">
+        </div>
+        <div class="health-field">
+          <label>이완기 ${type.name} (${type.unit})</label>
+          <input type="number" id="h_${type.id}_low" placeholder="예: 82">
+        </div>`;
+    } else {
+      html += `
+        <div class="health-field">
+          <label>${type.name}${type.unit ? " (" + type.unit + ")" : ""}<span class="del-wrap">${pendingIndicatorDelete === type.id ? '<span class="del-confirm-tooltip">정말 삭제할까요?</span>' : ""}<button class="del-indicator" title="지표 삭제" onclick="deleteHealthIndicator('${type.id}')">✕</button></span></label>
+          <input type="number" step="0.1" id="h_${type.id}" placeholder="측정값">
+        </div>`;
+    }
+  });
+  formEl.innerHTML = html;
+}
+
+// 새 건강 지표 항목 추가 (예: 체온, 맥박, 산소포화도 등)
+function addHealthIndicatorType() {
+  const name = document.getElementById("newIndicatorName").value.trim();
+  const unit = document.getElementById("newIndicatorUnit").value.trim();
+
+  if (name === "") {
+    alert("지표 이름을 입력해주세요!");
+    return;
+  }
+
+  const newId = "hi_" + Date.now();
+  healthIndicatorTypes.push({ id: newId, name: name, unit: unit, compound: false });
+  saveHealthIndicatorTypes();
+
+  document.getElementById("newIndicatorName").value = "";
+  document.getElementById("newIndicatorUnit").value = "";
+  renderHealthForm();
+}
+
+// 건강 지표 항목 삭제 (지금까지 기록된 값은 그대로 남아있어요)
+let pendingIndicatorDelete = null;
+let pendingIndicatorDeleteTimer = null;
+
+function deleteHealthIndicator(typeId) {
+  if (pendingIndicatorDelete === typeId) {
+    clearTimeout(pendingIndicatorDeleteTimer);
+    pendingIndicatorDelete = null;
+    healthIndicatorTypes = healthIndicatorTypes.filter(function (t) { return t.id !== typeId; });
+    saveHealthIndicatorTypes();
+    renderHealthForm();
+  } else {
+    pendingIndicatorDelete = typeId;
+    renderHealthForm();
+    clearTimeout(pendingIndicatorDeleteTimer);
+    pendingIndicatorDeleteTimer = setTimeout(function () {
+      pendingIndicatorDelete = null;
+      renderHealthForm();
+    }, 3000);
+  }
+}
+
+function renderHealthRecords() {
+  const listEl = document.getElementById("healthList");
+  if (healthRecords.length === 0) {
+    listEl.innerHTML = '<p class="empty-msg">아직 기록된 건강 지표가 없어요. 위에서 측정값을 입력해보세요!</p>';
+    return;
+  }
+  listEl.innerHTML = "";
+  healthRecords.forEach(function (rec) {
+    let vals = "";
+    (rec.values || []).forEach(function (v) {
+      vals += `<span>${v.label} ${v.text}</span>`;
+    });
+
+    listEl.innerHTML += `
+      <div class="health-item">
+        <div class="health-vals">${vals}</div>
+        <div class="log-meta">✍️ ${rec.name} · ${rec.time}</div>
+      </div>`;
+  });
+}
+
+function addHealthRecord() {
+  const name = document.getElementById("hRecorderName").value.trim();
+  if (name === "") {
+    alert("측정한 사람의 이름을 입력해주세요!");
+    return;
+  }
+
+  const values = [];
+  let bpError = false;
+
+  healthIndicatorTypes.forEach(function (type) {
+    if (type.compound) {
+      const highEl = document.getElementById("h_" + type.id + "_high");
+      const lowEl = document.getElementById("h_" + type.id + "_low");
+      const high = highEl ? highEl.value.trim() : "";
+      const low = lowEl ? lowEl.value.trim() : "";
+      if (high !== "" || low !== "") {
+        if (high === "" || low === "") { bpError = true; return; }
+        values.push({ label: type.name, text: `${high}/${low} ${type.unit}` });
+      }
+    } else {
+      const el = document.getElementById("h_" + type.id);
+      const val = el ? el.value.trim() : "";
+      if (val !== "") {
+        values.push({ label: type.name, text: val + (type.unit ? " " + type.unit : "") });
+      }
+    }
+  });
+
+  if (bpError) {
+    alert("혈압은 수축기·이완기 값을 함께 입력해주세요!");
+    return;
+  }
+  if (values.length === 0) {
+    alert("측정값을 최소 하나는 입력해주세요!");
+    return;
+  }
+
+  const now = new Date();
+  const timeStr = (now.getMonth() + 1) + "월 " + now.getDate() + "일 " +
+                  (now.getHours() >= 12 ? "오후" : "오전") + " " +
+                  (now.getHours() % 12 || 12) + ":" + String(now.getMinutes()).padStart(2, "0");
+
+  const rec = { name: name, values: values, time: timeStr };
+  healthRecords.unshift(rec);
+  LS.setItem("healthRecords", JSON.stringify(healthRecords));
+  sendToSheets({ type: "건강지표", data: rec });
+
+  healthIndicatorTypes.forEach(function (type) {
+    if (type.compound) {
+      const h = document.getElementById("h_" + type.id + "_high");
+      const l = document.getElementById("h_" + type.id + "_low");
+      if (h) h.value = "";
+      if (l) l.value = "";
+    } else {
+      const el = document.getElementById("h_" + type.id);
+      if (el) el.value = "";
+    }
+  });
+  renderHealthRecords();
+}
+
+// ==========================================================
+// 간병 일지 그리기
+// ==========================================================
+
+// ==========================================================
+// 상태 기록 항목 고르기 (넷플릭스에서 관심있는 작품 몇 개 고르듯,
+// 여러 후보 항목 중 기록하고 싶은 것만 골라서 나만의 기록 폼을 만들어요)
+// ==========================================================
+const statusCategoryPool = [
+  { id: "bp",        icon: "🩺", label: "혈압",         options: ["정상", "약간 높음", "높음", "낮음", "미측정"] },
+  { id: "meal",      icon: "🍚", label: "식사",         options: ["잘 드심", "보통", "조금 드심", "못 드심"] },
+  { id: "stool",     icon: "🚻", label: "배변",         options: ["정상", "변비 기미", "설사", "기록없음"] },
+  { id: "mood",      icon: "😊", label: "컨디션",       options: ["좋음", "보통", "안좋음"] },
+  { id: "sleep",     icon: "😴", label: "수면",         options: ["잘 주무심", "뒤척임", "못 주무심", "기록없음"] },
+  { id: "med",       icon: "💊", label: "복약 챙김",    options: ["잘 챙김", "일부 누락", "못 챙김"] },
+  { id: "activity",  icon: "🚶", label: "활동량",       options: ["활발", "보통", "저조", "거동 불편"] },
+  { id: "pain",      icon: "🤕", label: "통증",         options: ["없음", "약간", "심함"] },
+  { id: "fever",     icon: "🌡️", label: "체온",         options: ["정상", "미열", "고열"] },
+  { id: "cognition", icon: "🧠", label: "인지 상태",    options: ["또렷함", "약간 혼란", "혼란스러움"] },
+  { id: "skin",      icon: "🩹", label: "피부 상태",    options: ["양호", "발진", "욕창 위험"] },
+  { id: "hydration", icon: "💧", label: "수분 섭취",    options: ["충분", "보통", "부족"] },
+  { id: "breathing", icon: "🫁", label: "호흡/기침",    options: ["정상", "기침 있음", "호흡 곤란"] },
+  { id: "fall",      icon: "🦯", label: "이동/낙상 위험", options: ["안전", "부축 필요", "낙상 있었음"] },
+];
+
+// 가족이 고른 항목 id 목록 (아직 안 골랐으면 null)
+let selectedStatusCategories; // 방에 들어오면 loadRoomData()에서 채워져요
+let tempSelectedCategories = []; // 선택 화면에서 임시로 고르는 중인 목록
+
+function renderStatusSection() {
+  const container = document.getElementById("statusSection");
+  if (!selectedStatusCategories || selectedStatusCategories.length === 0) {
+    renderStatusOnboarding([]);
+  } else {
+    renderStatusForm();
+  }
+}
+
+// 항목 고르기 화면 (다시 고르기일 땐 기존 선택을 미리 체크해서 보여줘요)
+function renderStatusOnboarding(preselect) {
+  const container = document.getElementById("statusSection");
+  tempSelectedCategories = preselect ? preselect.slice() : [];
+
+  let cardsHtml = "";
+  statusCategoryPool.forEach(function (cat) {
+    const isSel = tempSelectedCategories.indexOf(cat.id) !== -1;
+    cardsHtml += `
+      <div class="category-card ${isSel ? "selected" : ""}" data-id="${cat.id}" onclick="toggleCategoryCard('${cat.id}')">
+        <div class="cat-icon">${cat.icon}</div>
+        <div class="cat-label">${cat.label}</div>
+      </div>`;
+  });
+
+  container.innerHTML = `
+    <p class="category-hint">우리 가족이 매번 기록하고 싶은 항목을 3~8개 골라주세요. 나중에 언제든 다시 고를 수 있어요.</p>
+    <div class="category-grid" id="categoryGrid">${cardsHtml}</div>
+    <p class="category-count" id="categoryCount"></p>
+    <button class="log-btn" id="confirmCategoryBtn" onclick="confirmStatusCategories()">이 항목으로 기록 시작하기</button>
+  `;
+  updateCategoryCount();
+}
+
+function toggleCategoryCard(id) {
+  const idx = tempSelectedCategories.indexOf(id);
+  if (idx === -1) {
+    if (tempSelectedCategories.length >= 8) {
+      alert("최대 8개까지 고를 수 있어요!");
+      return;
+    }
+    tempSelectedCategories.push(id);
+  } else {
+    tempSelectedCategories.splice(idx, 1);
+  }
+  const card = document.querySelector('#categoryGrid .category-card[data-id="' + id + '"]');
+  if (card) card.classList.toggle("selected");
+  updateCategoryCount();
+}
+
+function updateCategoryCount() {
+  const countEl = document.getElementById("categoryCount");
+  if (!countEl) return;
+  countEl.textContent = tempSelectedCategories.length + "개 선택됨 (최소 3개, 최대 8개)";
+  const btn = document.getElementById("confirmCategoryBtn");
+  if (btn) btn.disabled = tempSelectedCategories.length < 3;
+}
+
+function confirmStatusCategories() {
+  if (tempSelectedCategories.length < 3) {
+    alert("최소 3개는 골라주세요!");
+    return;
+  }
+  selectedStatusCategories = tempSelectedCategories.slice();
+  LS.setItem("selectedStatusCategories", JSON.stringify(selectedStatusCategories));
+  renderStatusForm();
+}
+
+// 이미 항목을 고른 뒤, 다시 고르고 싶을 때
+function reconfigureStatusCategories() {
+  renderStatusOnboarding(selectedStatusCategories);
+}
+
+// 실제 상태 기록 입력 폼 (고른 항목만큼만 select가 생겨요)
+function renderStatusForm() {
+  const container = document.getElementById("statusSection");
+  let fieldsHtml = "";
+
+  selectedStatusCategories.forEach(function (id) {
+    const cat = statusCategoryPool.find(function (c) { return c.id === id; });
+    if (!cat) return;
+    let optionsHtml = "";
+    cat.options.forEach(function (opt) {
+      optionsHtml += `<option value="${opt}">${opt}</option>`;
+    });
+    fieldsHtml += `
+      <div class="status-field">
+        <label>${cat.icon} ${cat.label}</label>
+        <select id="statusSel_${cat.id}">${optionsHtml}</select>
+      </div>`;
+  });
+
+  container.innerHTML = `
+    <input class="wide" id="writerName" placeholder="작성자 (예: 아빠)">
+    <div class="status-form">${fieldsHtml}</div>
+    <div class="status-etc">
+      <label>기타 (자유롭게 적어주세요)</label>
+      <textarea id="logContent" placeholder="예) 산책 30분 하시고 기분 좋아 보이셨어요."></textarea>
+    </div>
+    <button class="log-btn" onclick="addLog()">기록 남기기</button>
+    <span class="reconfig-link" onclick="reconfigureStatusCategories()">⚙️ 기록 항목 다시 고르기</span>
+  `;
+}
+function renderLogs() {
+  const listEl = document.getElementById("logList");
+  if (logs.length === 0) {
+    listEl.innerHTML = '<p class="empty-msg">아직 기록이 없어요. 첫 기록을 남겨보세요!</p>';
+    return;
+  }
+  listEl.innerHTML = "";
+  logs.forEach(function (log) {
+    listEl.innerHTML += `
+      <div class="log-item">
+        ${log.content}
+        <div class="log-meta">✍️ ${log.name} · ${log.time}</div>
+      </div>`;
+  });
+}
+
+// 일지 추가 함수 (사용자가 고른 항목들의 선택값 + 기타 서술을 하나의 기록으로 합쳐요)
+function addLog() {
+  const name = document.getElementById("writerName").value.trim();
+  const etcEl = document.getElementById("logContent");
+  const etc = etcEl ? etcEl.value.trim() : "";
+
+  if (name === "") {
+    alert("작성자를 입력해주세요!");
+    return;
+  }
+
+  const parts = [];
+  const dataObj = { name: name };
+  selectedStatusCategories.forEach(function (id) {
+    const cat = statusCategoryPool.find(function (c) { return c.id === id; });
+    const sel = document.getElementById("statusSel_" + id);
+    if (cat && sel) {
+      parts.push(`${cat.label}: ${sel.value}`);
+      dataObj[id] = sel.value;
+    }
+  });
+
+  let content = parts.join(" · ");
+  if (etc !== "") content += (content ? "<br>" : "") + `기타: ${etc}`;
+  dataObj.etc = etc;
+  dataObj.content = content; // 시트에는 항목별 값이 아니라 이 합쳐진 문장이 그대로 저장/공유돼요
+
+  // 현재 시간을 "7월 11일 오후 3:20" 같은 형태로 만들기
+  const now = new Date();
+  const timeStr = (now.getMonth() + 1) + "월 " + now.getDate() + "일 " +
+                  (now.getHours() >= 12 ? "오후" : "오전") + " " +
+                  (now.getHours() % 12 || 12) + ":" + String(now.getMinutes()).padStart(2, "0");
+  dataObj.time = timeStr;
+
+  const newLog = { name: name, content: content, time: timeStr };
+  logs.unshift(newLog); // 최신 기록이 위로
+  LS.setItem("careLogs", JSON.stringify(logs));
+  sendToSheets({ type: "일지", data: dataObj });
+
+  if (etcEl) etcEl.value = "";
+  renderLogs();
+}
+
+// ==========================================================
+// Google Sheets로 데이터 보내기 (URL이 설정된 경우에만)
+// ==========================================================
+function sendToSheets(payload) {
+  if (APPS_SCRIPT_URL !== "" && currentRoom) {
+    payload.room = currentRoom; // 어느 방의 기록인지 함께 보내요
+    fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+}
+
+// ==========================================================
+// Google Sheets에서 가족들이 남긴 기록 불러오기 (URL이 설정된 경우에만)
+// 오늘의 약 체크 / 건강 지표 기록 / 캘린더 일정 / 간병 일지를
+// 모두 시트 기준으로 새로고침해서, 다른 가족이 다른 기기에서 남긴
+// 기록도 함께 볼 수 있게 해줘요.
+// ==========================================================
+function syncFromSheets() {
+  if (APPS_SCRIPT_URL === "" || !currentRoom) return;
+
+  const url = APPS_SCRIPT_URL + "?room=" + encodeURIComponent(currentRoom) + "&pwHash=" + encodeURIComponent(currentPwHash);
+
+  fetch(url)
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      if (!data.ok) {
+        console.error("가족 기록을 불러오지 못했어요:", data.error);
+        return;
+      }
+      if (data.medChecks) {
+        medChecks = data.medChecks;
+        LS.setItem("medChecks", JSON.stringify(medChecks));
+        renderMeds();
+      }
+      if (data.medications) {
+        medications = data.medications;
+        LS.setItem("medications", JSON.stringify(medications));
+        renderMeds();
+      }
+      if (data.profile) {
+        patientProfile = data.profile;
+        LS.setItem("patientProfile", JSON.stringify(patientProfile));
+        renderProfileView();
+      }
+      if (data.reminderSetting) {
+        medReminder = data.reminderSetting;
+        LS.setItem("medReminder", JSON.stringify(medReminder));
+        updateReminderStatus();
+      }
+      if (data.healthRecords) {
+        healthRecords = data.healthRecords;
+        LS.setItem("healthRecords", JSON.stringify(healthRecords));
+        renderHealthRecords();
+      }
+      if (data.events) {
+        events = data.events;
+        saveEvents();
+        renderCalendar();
+        if (selectedKey) renderEvents();
+        renderUpcoming();
+      }
+      if (data.logs) {
+        logs = data.logs;
+        LS.setItem("careLogs", JSON.stringify(logs));
+        renderLogs();
+      }
+    })
+    .catch(function (err) {
+      console.error("가족 기록을 불러오지 못했어요:", err);
+    });
+}
+
+// ==========================================================
+// 방에 들어왔을 때, 그 방의 기록을 이 브라우저(localStorage)에서 불러와요
+// ==========================================================
+function loadRoomData() {
+  patientProfile = JSON.parse(LS.getItem("patientProfile")) || defaultProfile;
+  tempAvatar = patientProfile.avatar;
+
+  medications = JSON.parse(LS.getItem("medications")) || defaultMedications;
+  medChecks = JSON.parse(LS.getItem("medChecks")) || {};
+  medReminder = JSON.parse(LS.getItem("medReminder")) || { email: "", time: "21:00" };
+  logs = JSON.parse(LS.getItem("careLogs")) || [
+    { name: "엄마", content: "아침 잘 드셨고 혈압 130/82로 안정적이에요.", time: "오늘 오전 8:30" },
+  ];
+
+  events = JSON.parse(LS.getItem("careEvents"));
+  // 처음 만든 방이면 이번 달에 예시 일정을 넣어줘요
+  if (!events) {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    events = {};
+    events[dateKey(y, m, 14)] = [{ id: "evt_seed_1", title: "제주대병원 내과 정기검진 10:30", who: "엄마" }];
+    events[dateKey(y, m, 21)] = [{ id: "evt_seed_2", title: "연동 안과 백내장 경과 확인 14:00", who: "고모" }];
+    events[dateKey(y, m, 25)] = [{ id: "evt_seed_3", title: "물리치료 (재활센터) 11:00", who: "아빠" }];
+    saveEvents();
+  }
+
+  healthIndicatorTypes = JSON.parse(LS.getItem("healthIndicatorTypes")) || defaultHealthIndicatorTypes;
+  healthRecords = JSON.parse(LS.getItem("healthRecords")) || [];
+
+  selectedStatusCategories = JSON.parse(LS.getItem("selectedStatusCategories"));
+}
+
+// 방에 들어왔을 때(로그인 성공 직후) 화면을 그리기 시작해요
+function startApp() {
+  loadRoomData();
+  renderProfileView();
+  renderMeds();
+  updateReminderStatus();
+  renderLogs();
+  renderHealthForm();
+  renderHealthRecords();
+  renderStatusSection();
+  renderCalendar();
+  renderUpcoming();
+  syncFromSheets(); // 연동 설정이 되어 있으면, 가족들의 최신 기록으로 화면을 갱신해요
+}
+</script>
+
+</body>
+</html>
